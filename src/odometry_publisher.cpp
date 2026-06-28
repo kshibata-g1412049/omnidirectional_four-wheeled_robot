@@ -41,8 +41,6 @@
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 
 #include "omnidirectional_four_wheeled_robot/robot_geometry.hpp"
@@ -160,9 +158,13 @@ private:
     y_ += (Ux * std::sin(theta_mid) + Uy * std::cos(theta_mid)) * dt;
     theta_ = std::atan2(std::sin(theta_ + delta_theta), std::cos(theta_ + delta_theta));
 
-    tf2::Quaternion q;
-    q.setRPY(0.0, 0.0, theta_);
-    const geometry_msgs::msg::Quaternion orientation = tf2::toMsg(q);
+    // Yaw-only rotation -> quaternion, computed directly rather than via
+    // tf2::Quaternion::setRPY(): the tf2 LinearMath headers needed for that
+    // are not available on every distro (e.g. removed on Rolling), and a
+    // pure-yaw quaternion is simple enough not to need the helper anyway.
+    geometry_msgs::msg::Quaternion orientation;
+    orientation.z = std::sin(0.5 * theta_);
+    orientation.w = std::cos(0.5 * theta_);
 
     nav_msgs::msg::Odometry odom_msg;
     odom_msg.header.stamp = msg->header.stamp;
