@@ -66,13 +66,38 @@ PowerShell prompt (with Docker Desktop running):
 .\scripts\docker_build_and_test.ps1 -ImageTag omni4wd:humble -RosDistro humble
 ```
 
-Interactive use of the image:
+Interactive use of the image (headless -- no Gazebo/rviz windows):
 
 ```bash
 docker run --rm -it omni4wd:jazzy bash
 # inside:
-ros2 launch omnidirectional_four_wheeled_robot gazebo.launch.py gui:=false
+ros2 launch omnidirectional_four_wheeled_robot gazebo.launch.py gui:=false rviz:=false
 ```
+
+### GUI use (Gazebo + rviz on screen, Linux host)
+
+The image defaults to offscreen rendering (`QT_QPA_PLATFORM=offscreen`), since
+that's what the headless CI smoke test needs. To actually see and drive the
+robot in the Gazebo/rviz windows, forward the container's display to the
+host's X server with `scripts/docker_run_gui.sh` (builds the image if it
+isn't already present, grants/revokes X server access automatically):
+
+```bash
+bash scripts/docker_run_gui.sh                       # omni4wd:jazzy, jazzy
+bash scripts/docker_run_gui.sh omni4wd:humble humble
+bash scripts/docker_run_gui.sh omni4wd:jazzy jazzy -- rviz:=false   # gz GUI only
+```
+
+Then drive it from another terminal on the host (or `docker exec -it <container> bash`):
+
+```bash
+ros2 topic pub /cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.5, y: 0.0}, angular: {z: 0.0}}'
+```
+
+This requires a Linux host with an X server (the common case for desktop
+Linux); macOS/Windows need a third-party X server (XQuartz / VcXsrv) and
+different `docker run` flags, which aren't covered by this script -- on
+those platforms use the headless workflow above instead.
 
 ## Native build (ROS 2 Humble, Jazzy, or Rolling installed)
 
