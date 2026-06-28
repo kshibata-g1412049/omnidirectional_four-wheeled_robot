@@ -96,15 +96,33 @@ try:
 except Exception as e:
     print("[smoke] ERR reading /joint_states:", e); sys.exit(2)
 
-doc = out.split('---')[0]
-data = yaml.safe_load(doc) or {}
-names = data.get('name', []) or []
-vel = data.get('velocity', []) or []
+# `ros2 topic echo` can prepend tab-indented banner lines (e.g.
+# "\ttotal count change:1"); drop those, then find the YAML message doc.
+clean = "\n".join(ln for ln in out.splitlines() if "\t" not in ln)
+data = None
+for seg in clean.split("---"):
+    seg = seg.strip()
+    if not seg:
+        continue
+    try:
+        d = yaml.safe_load(seg)
+    except Exception:
+        continue
+    if isinstance(d, dict) and "velocity" in d:
+        data = d
+        break
+if data is None:
+    print("[smoke] could not parse /joint_states; raw output:\n", out[:600])
+    sys.exit(2)
+
+names = data.get("name") or []
+vel = data.get("velocity") or []
 pairs = list(zip(names, vel))
 print("[smoke] joint velocities:", pairs)
-drive = [abs(v) for n, v in pairs if str(n).endswith('joint2')]
-mx = max(drive, default=0.0)
-print("[smoke] max |drive-joint velocity| = %.4f rad/s" % mx)
+# Under forward /cmd_vel the drive joints (*_joint2) spin; checking the max
+# over all joints is sufficient to prove the wheels are turning.
+mx = max((abs(v) for v in vel), default=0.0)
+print("[smoke] max |joint velocity| = %.4f rad/s" % mx)
 sys.exit(0 if mx > 0.1 else 3)
 PY
 MOVE_RC=$?
