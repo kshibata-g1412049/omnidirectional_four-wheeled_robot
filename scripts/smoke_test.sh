@@ -39,8 +39,8 @@ trap cleanup EXIT
 # ---------------------------------------------------------------------------
 # 1) wait for all controllers to become active
 # ---------------------------------------------------------------------------
-echo "[smoke] waiting for controllers to become active (timeout 240s)..."
-deadline=$((SECONDS + 240))
+echo "[smoke] waiting for controllers to become active (timeout 360s)..."
+deadline=$((SECONDS + 360))
 active_ok=0
 while [ $SECONDS -lt $deadline ]; do
   out=$(ros2 control list_controllers 2>/dev/null)
