@@ -24,30 +24,14 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
 
+#include "omnidirectional_four_wheeled_robot/robot_geometry.hpp"
+
 using namespace std::chrono_literals;
+using omnidirectional_four_wheeled_robot::kWheel;
+using omnidirectional_four_wheeled_robot::RADIUS;
 
 namespace {
-constexpr int    CONTROL_CYCLE = 10;     // [Hz]
-constexpr double LENGTH = 0.75;          // chassis length
-constexpr double WIDTH  = 0.75;          // chassis width
-constexpr double HEIGHT = 0.25;          // chassis height
-constexpr double RADIUS = 0.2;           // wheel radius
-
-// 3-D Cartesian coordinate
-struct Cartesian3 {
-  double x;
-  double y;
-  double z;
-};
-
-// Wheel positions. Index order matches the controller joint order [FR,RR,FL,RL]
-// (FR = +x/+y, RR = +x/-y, FL = -x/+y, RL = -x/-y), as defined in the URDF.
-constexpr std::array<Cartesian3, 4> kWheel = {{
-  { 0.5 * LENGTH,  0.5 * WIDTH, -0.5 * HEIGHT},  // n=0: FR
-  { 0.5 * LENGTH, -0.5 * WIDTH, -0.5 * HEIGHT},  // n=1: RR
-  {-0.5 * LENGTH,  0.5 * WIDTH, -0.5 * HEIGHT},  // n=2: FL
-  {-0.5 * LENGTH, -0.5 * WIDTH, -0.5 * HEIGHT},  // n=3: RL
-}};
+constexpr int CONTROL_CYCLE = 10;  // [Hz]
 
 // Swerve-drive inverse kinematics. Computes the steering angle (delta) and the
 // wheel rotation speed (omega) for the commanded body twist (Ux, Uy, Uq).

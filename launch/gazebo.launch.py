@@ -8,6 +8,7 @@
 #    - ros2_control spawners: joint_state_broadcaster, position_controller,
 #      velocity_controller
 #    - controller_kinematics inverse-kinematics node (/cmd_vel -> wheel commands)
+#    - odometry_publisher forward-kinematics node (/joint_states -> /odom + tf)
 #    - ros_gz_bridge for /clock, IMU and camera topics
 #    - rviz2 (optional, arg rviz:=true)
 # ===========================================================================
@@ -143,6 +144,13 @@ def generate_launch_description():
         parameters=[{"use_sim_time": True}],
     )
 
+    odometry_publisher = Node(
+        package="omnidirectional_four_wheeled_robot",
+        executable="odometry_publisher",
+        output="screen",
+        parameters=[{"use_sim_time": True}],
+    )
+
     rviz = Node(
         package="rviz2",
         executable="rviz2",
@@ -179,5 +187,6 @@ def generate_launch_description():
         load_jsb_after_spawn,
         load_controllers_after_jsb,
         controller_kinematics,
+        odometry_publisher,
         rviz,
     ])

@@ -146,15 +146,74 @@ sys.exit(0 if mx > 0.1 else 3)
 PY
 MOVE_RC=$?
 
+# ---------------------------------------------------------------------------
+# 5) did odometry_publisher integrate that motion into /odom?
+# ---------------------------------------------------------------------------
+echo "[smoke] checking /odom ..."
+sleep 2
+python3 - <<'PY'
+import subprocess, sys, re
+try:
+    import yaml
+except Exception as e:
+    print("[smoke] pyyaml missing:", e); sys.exit(2)
+try:
+    out = subprocess.check_output(
+        ["ros2", "topic", "echo", "--once", "/odom"],
+        timeout=20, text=True)
+except Exception as e:
+    print("[smoke] ERR reading /odom:", e); sys.exit(2)
+
+# Same banner-stripping approach as the /joint_states check above.
+lines = []
+for ln in out.splitlines():
+    if "message was lost" in ln.lower():
+        continue
+    if "\t" in ln:
+        if re.search(r"---\s*$", ln):
+            lines.append("---")
+        continue
+    lines.append(ln)
+clean = "\n".join(lines)
+data = None
+for seg in clean.split("---"):
+    seg = seg.strip()
+    if not seg:
+        continue
+    try:
+        d = yaml.safe_load(seg)
+    except Exception:
+        continue
+    if isinstance(d, dict) and "pose" in d:
+        data = d
+        break
+if data is None:
+    print("[smoke] could not parse /odom; raw output:\n", out[:600])
+    sys.exit(2)
+
+x = data["pose"]["pose"]["position"]["x"]
+print("[smoke] odom pose.position.x = %.4f m" % x)
+# Forward /cmd_vel has been publishing for several seconds; a working
+# odometry_publisher should have integrated a noticeable forward distance,
+# not just reported the wheels spinning.
+sys.exit(0 if x > 0.05 else 3)
+PY
+ODOM_RC=$?
+
 kill -INT "$PUB_PID" 2>/dev/null
 
 # ---------------------------------------------------------------------------
 # verdict
 # ---------------------------------------------------------------------------
-if [ "$MOVE_RC" -eq 0 ]; then
-  echo "[smoke] PASS: controllers active and wheels rotating under /cmd_vel"
-  exit 0
+if [ "$MOVE_RC" -ne 0 ]; then
+  echo "[smoke] FAIL: wheel drive joints did not move (rc=$MOVE_RC)"
+  echo "----- launch log tail -----"; tail -n 100 "$LOG"
+  exit 1
 fi
-echo "[smoke] FAIL: wheel drive joints did not move (rc=$MOVE_RC)"
-echo "----- launch log tail -----"; tail -n 100 "$LOG"
-exit 1
+if [ "$ODOM_RC" -ne 0 ]; then
+  echo "[smoke] FAIL: /odom did not reflect forward motion (rc=$ODOM_RC)"
+  echo "----- launch log tail -----"; tail -n 100 "$LOG"
+  exit 1
+fi
+echo "[smoke] PASS: controllers active, wheels rotating, and /odom reflects motion"
+exit 0
