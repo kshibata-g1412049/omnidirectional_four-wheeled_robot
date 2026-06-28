@@ -5,7 +5,9 @@ no per-distro file forks) + **Gazebo (gz)** package for an omnidirectional
 four-wheeled (swerve-drive) robot. Each wheel has an independent steering joint
 (`*_joint1`, position controlled) and a drive joint (`*_joint2`, velocity
 controlled). The `controller_kinematics` node converts a body twist on
-`/cmd_vel` into per-wheel steering angles and rotation speeds.
+`/cmd_vel` into per-wheel steering angles and rotation speeds. The
+`odometry_publisher` node does the inverse: it reads `/joint_states` and
+publishes `/odom` + the `odom` -> `base_link` TF (forward kinematics).
 
 > This repository was originally a ROS 1 (catkin) package. It has been ported to
 > ROS 2; the legacy ROS 1 files have been removed and this package now lives at
@@ -15,7 +17,8 @@ controlled). The `controller_kinematics` node converts a body twist on
 
 ```
 package.xml  CMakeLists.txt          # ament_cmake package
-src/                                 # controller_kinematics, spawner_sphere (rclcpp)
+src/                                 # controller_kinematics, odometry_publisher, spawner_sphere (rclcpp)
+include/                             # shared wheel-geometry constants (robot_geometry.hpp)
 urdf/                                # robot/wheel/camera/laser xacro + sphere.urdf
 config/                              # controllers.yaml, gz_bridge.yaml, robot.rviz
 worlds/empty.sdf                     # gz world with physics/sensors/imu systems
@@ -115,6 +118,7 @@ ros2 launch omnidirectional_four_wheeled_robot display.launch.py
 | `/position_controller/commands`  | `std_msgs/Float64MultiArray`  | steering angles [FR,RR,FL,RL] |
 | `/velocity_controller/commands`  | `std_msgs/Float64MultiArray`  | wheel speeds   [FR,RR,FL,RL]  |
 | `/joint_states`                  | `sensor_msgs/JointState`      | joint_state_broadcaster       |
+| `/odom`                          | `nav_msgs/Odometry`           | odometry_publisher (forward kinematics), also broadcasts `odom`->`base_link` TF |
 | `/imu`                           | `sensor_msgs/Imu`             | bridged from gz               |
 | `/camera/image`, `/camera/camera_info` | `sensor_msgs/Image`, `CameraInfo` | bridged from gz         |
 
