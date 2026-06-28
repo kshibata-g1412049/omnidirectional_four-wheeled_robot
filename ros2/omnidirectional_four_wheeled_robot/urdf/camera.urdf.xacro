@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!-- ===========================================================================  -->
+<!-- |    camera.urdf.xacro  (ROS 2 / gz port)                                   | -->
+<!-- |    author: Koji Shibata                                                   | -->
+<!-- |    e-mail: kshibata.0519@gmail.com                                        | -->
+<!-- |    This is a URDF file that describes an omnidirectional                   | -->
+<!-- |    four-wheeled robot for ROS 2 users.                                     | -->
+<!-- ===========================================================================  -->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="camera_macro" params="parent prefix xyz">
+	<link name="${prefix}_link"/>
+
+	<joint name="${prefix}_joint" type="fixed">
+	  <parent link="${parent}"/>
+	  <child  link="${prefix}_link"/>
+	  <origin xyz="${xyz}" rpy="${-pi/2} 0. ${-pi/2}"/>
+	</joint>
+
+	<!-- gz camera sensor. Handled by gz-sim-sensors-system (loaded in the    -->
+	<!-- world) and bridged to ROS via ros_gz_bridge (see config/gz_bridge.yaml). -->
+	<gazebo reference="${prefix}_link">
+	  <sensor type="camera" name="${prefix}">
+		<always_on>1</always_on>
+		<update_rate>30</update_rate>
+		<visualize>true</visualize>
+		<topic>${prefix}/image</topic>
+		<gz_frame_id>${prefix}_link</gz_frame_id>
+		<camera name="${prefix}">
+		  <horizontal_fov>1.3962634</horizontal_fov>
+		  <image>
+			<width>800</width>
+			<height>600</height>
+			<format>R8G8B8</format>
+		  </image>
+		  <clip>
+			<near>0.02</near>
+			<far>300</far>
+		  </clip>
+		  <noise>
+			<type>gaussian</type>
+			<mean>0.</mean>
+			<stddev>0.007</stddev>
+		  </noise>
+		</camera>
+	  </sensor>
+	</gazebo>
+  </xacro:macro>
+</robot>

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!-- ===========================================================================  -->
+<!-- |    sphere.urdf                                                            | -->
+<!-- |    A simple sphere model spawned into the simulation by spawner_sphere    | -->
+<!-- |    (or by ros_gz_sim create in the launch file).                          | -->
+<!-- ===========================================================================  -->
+<robot name="sphere">
+	<link name="sphere_link">
+		<visual>
+			<origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+			<geometry>
+				<sphere radius="0.5"/>
+			</geometry>
+			<material name="Blue">
+				<color rgba="0. 0. 1. 1."/>
+			</material>
+		</visual>
+		<collision>
+			<origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+			<geometry>
+				<sphere radius="0.5"/>
+			</geometry>
+		</collision>
+		<inertial>
+			<origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+			<mass value="1.0"/>
+			<!-- solid sphere: I = 2/5 m r^2 = 0.1 -->
+			<inertia ixx="0.1" ixy="0." ixz="0." iyy="0.1" iyz="0." izz="0.1"/>
+		</inertial>
+	</link>
+</robot>

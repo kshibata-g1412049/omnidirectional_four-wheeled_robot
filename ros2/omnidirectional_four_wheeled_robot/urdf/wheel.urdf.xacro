@@ -1,0 +1,115 @@
+<?xml version="1.0"?>
+<!-- ===========================================================================  -->
+<!-- |    wheel.urdf.xacro  (ROS 2 / gz port)                                    | -->
+<!-- |    author: Koji Shibata                                                   | -->
+<!-- |    e-mail: kshibata.0519@gmail.com                                        | -->
+<!-- |    This is a URDF file that describes an omnidirectional                   | -->
+<!-- |    four-wheeled robot for ROS 2 users.                                     | -->
+<!-- ===========================================================================  -->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+	<!-- Kinematic/visual description of one wheel (steering link + drive link). -->
+	<xacro:macro name="wheel_macro" params="suffix parent x_pos y_pos">
+		<link name="${suffix}_link1">
+			<visual>
+				<origin xyz="0. 0. 0." rpy="-${pi/2} 0. 0."/>
+				<geometry>
+					<cylinder radius="${cylinder_radius}" length="${cylinder_length}"/>
+				</geometry>
+				<material name="Black">
+					<color rgba="0. 0. 0. 1."/>
+				</material>
+			</visual>
+			<collision>
+				<origin xyz="0. 0. 0." rpy="-${pi/2} 0. 0."/>
+				<geometry>
+					<cylinder radius="${cylinder_radius}" length="${cylinder_length}"/>
+				</geometry>
+			</collision>
+			<inertial>
+				<origin xyz="0. 0. 0." rpy="-${pi/2} 0. 0."/>
+				<mass value="${wheel_mass}"/>
+				<inertia ixx="${wheel_mass * cylinder_radius**2 / 2}" ixy="0." ixz="0."
+						  	 iyy="${wheel_mass * (cylinder_radius**2 / 4 + cylinder_length**2 / 12)}" iyz="0."
+						 	 	 izz="${wheel_mass * (cylinder_radius**2 / 4 + cylinder_length**2 / 12)}"/>
+			</inertial>
+		</link>
+
+		<link name="${suffix}_link2">
+			<visual>
+				<origin xyz="0. 0. 0." rpy="-${pi/2} 0. 0."/>
+				<geometry>
+					<cylinder radius="${cylinder_radius}" length="${cylinder_length}"/>
+				</geometry>
+				<material name="Black">
+					<color rgba="0. 0. 0. 1."/>
+				</material>
+			</visual>
+			<collision>
+				<origin xyz="0. 0. 0." rpy="-${pi/2} 0. 0."/>
+				<geometry>
+					<cylinder radius="${cylinder_radius}" length="${cylinder_length}"/>
+				</geometry>
+			</collision>
+			<inertial>
+				<origin xyz="0. 0. 0." rpy="-${pi/2} 0. 0."/>
+				<mass value="${wheel_mass}"/>
+				<inertia ixx="${wheel_mass * cylinder_radius**2 / 2}" ixy="0." ixz="0."
+					  		 iyy="${wheel_mass * (cylinder_radius**2 / 4 + cylinder_length**2 / 12)}" iyz="0."
+						  	 izz="${wheel_mass * (cylinder_radius**2 / 4 + cylinder_length**2 / 12)}"/>
+			</inertial>
+		</link>
+
+		<!-- joint1: steering (position controlled) -->
+		<joint name="${suffix}_joint1" type="continuous">
+			<origin xyz="${x_pos} ${y_pos} 0." rpy="0. 0. 0."/>
+			<axis xyz="0. 0. 1."/>
+			<parent link="${parent}"/>
+			<child link="${suffix}_link1"/>
+			<dynamics damping="1." friction="0."/>
+		</joint>
+
+		<!-- joint2: drive (velocity controlled) -->
+		<joint name="${suffix}_joint2" type="continuous">
+			<origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+			<axis xyz="0. 1. 0."/>
+			<parent link="${suffix}_link1"/>
+			<child link="${suffix}_link2"/>
+			<dynamics damping="1." friction="0."/>
+		</joint>
+
+		<gazebo reference="${suffix}_link1">
+			<mu1 value="0.05"/>
+			<mu2 value="0.05"/>
+			<material>Gazebo/Black</material>
+		</gazebo>
+
+		<gazebo reference="${suffix}_link2">
+			<mu1 value="0.80"/>
+			<mu2 value="0.80"/>
+			<material>Gazebo/Black</material>
+		</gazebo>
+	</xacro:macro>
+
+	<!-- ros2_control joint entries for one wheel.                                -->
+	<!-- joint1 = steering (position command), joint2 = drive (velocity command). -->
+	<!-- Call this inside a single <ros2_control> block in robot.urdf.xacro.      -->
+	<xacro:macro name="wheel_ros2_control" params="suffix">
+		<joint name="${suffix}_joint1">
+			<command_interface name="position">
+				<param name="min">-${pi}</param>
+				<param name="max">${pi}</param>
+			</command_interface>
+			<state_interface name="position"/>
+			<state_interface name="velocity"/>
+		</joint>
+		<joint name="${suffix}_joint2">
+			<command_interface name="velocity">
+				<param name="min">-${velocity_limit}</param>
+				<param name="max">${velocity_limit}</param>
+			</command_interface>
+			<state_interface name="position"/>
+			<state_interface name="velocity"/>
+		</joint>
+	</xacro:macro>
+</robot>

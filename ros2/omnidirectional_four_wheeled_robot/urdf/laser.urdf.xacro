@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<!-- ===========================================================================  -->
+<!-- |    laser.urdf.xacro  (ROS 2 / gz port)                                    | -->
+<!-- |    author: Koji Shibata                                                   | -->
+<!-- |    e-mail: kshibata.0519@gmail.com                                        | -->
+<!-- |    This is a URDF file that describes an omnidirectional                   | -->
+<!-- |    four-wheeled robot for ROS 2 users.                                     | -->
+<!-- ===========================================================================  -->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+	<xacro:macro name="laser_macro" params="parent prefix xyz rpy">
+		<link name="${prefix}_link">
+			<!-- The original Hokuyo .dae mesh is not shipped with gz, so a small  -->
+			<!-- box placeholder is used for visual/collision.                     -->
+			<collision>
+				<origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+				<geometry>
+					<box size="0.05 0.05 0.07"/>
+				</geometry>
+			</collision>
+			<visual>
+				<origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+				<geometry>
+					<box size="0.05 0.05 0.07"/>
+				</geometry>
+				<material name="Gray">
+					<color rgba="0.5 0.5 0.5 1."/>
+				</material>
+			</visual>
+			<inertial>
+				<mass value="1.e-6"/>
+				<origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+				<inertia ixx="1.e-6" ixy="0." ixz="0." iyy="1.e-6" iyz="0." izz="1.e-6" />
+			</inertial>
+		</link>
+
+		<joint name="${prefix}_joint" type="fixed">
+			<origin xyz="${xyz}" rpy="${rpy}"/>
+			<parent link="${parent}"/>
+			<child link="${prefix}_link"/>
+		</joint>
+
+		<!-- gz GPU lidar. Handled by gz-sim-sensors-system and bridged to ROS    -->
+		<!-- (sensor_msgs/LaserScan) via ros_gz_bridge.                           -->
+		<gazebo reference="${prefix}_link">
+			<sensor type="gpu_lidar" name="${prefix}_sensor">
+				<pose>0. 0. 0. 0. 0. 0.</pose>
+				<always_on>1</always_on>
+				<visualize>true</visualize>
+				<update_rate>40</update_rate>
+				<topic>${prefix}/scan</topic>
+				<gz_frame_id>${prefix}_link</gz_frame_id>
+				<lidar>
+					<scan>
+						<horizontal>
+							<samples>1080</samples>
+							<resolution>1</resolution>
+							<min_angle>${-3*pi/4}</min_angle>
+							<max_angle>${3*pi/4}</max_angle>
+						</horizontal>
+					</scan>
+					<range>
+						<min>0.1</min>
+						<max>30.</max>
+						<resolution>0.01</resolution>
+					</range>
+					<noise>
+						<type>gaussian</type>
+						<mean>0.</mean>
+						<stddev>1.e-3</stddev>
+					</noise>
+				</lidar>
+			</sensor>
+		</gazebo>
+	</xacro:macro>
+</robot>
