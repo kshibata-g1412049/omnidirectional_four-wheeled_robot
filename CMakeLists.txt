@@ -14,19 +14,37 @@ find_package(ros_gz_interfaces REQUIRED)
 
 # Inverse-kinematics controller node
 add_executable(controller_kinematics src/controller_kinematics.cpp)
-ament_target_dependencies(controller_kinematics
-  rclcpp
-  geometry_msgs
-  std_msgs
-)
 
 # Optional sphere spawner (uses ros_gz spawn service at runtime)
 add_executable(spawner_sphere src/spawner_sphere.cpp)
-ament_target_dependencies(spawner_sphere
-  rclcpp
-  ament_index_cpp
-  ros_gz_interfaces
-)
+
+# ament_target_dependencies() was removed from ament_cmake on Rolling but is
+# still the standard macro on Humble/Jazzy. Detect which linking style is
+# available rather than branching on distro name, so this keeps working
+# automatically as distros migrate.
+if(COMMAND ament_target_dependencies)
+  ament_target_dependencies(controller_kinematics
+    rclcpp
+    geometry_msgs
+    std_msgs
+  )
+  ament_target_dependencies(spawner_sphere
+    rclcpp
+    ament_index_cpp
+    ros_gz_interfaces
+  )
+else()
+  target_link_libraries(controller_kinematics
+    rclcpp::rclcpp
+    ${geometry_msgs_TARGETS}
+    ${std_msgs_TARGETS}
+  )
+  target_link_libraries(spawner_sphere
+    rclcpp::rclcpp
+    ament_index_cpp::ament_index_cpp
+    ${ros_gz_interfaces_TARGETS}
+  )
+endif()
 
 install(TARGETS
   controller_kinematics

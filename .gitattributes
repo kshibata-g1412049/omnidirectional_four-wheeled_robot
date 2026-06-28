@@ -1,0 +1,13 @@
+# Force LF line endings for files that are executed inside the Linux
+# container (or by bash directly), regardless of the host OS's git
+# autocrlf/core.eol settings. Without this, a Windows checkout with
+# core.autocrlf=true would convert these to CRLF and break the shebang
+# line once copied into the container.
+*.sh                  text eol=lf
+docker-entrypoint.sh  text eol=lf
+Dockerfile            text eol=lf
+.dockerignore         text eol=lf
+
+# Windows-native script: CRLF works fine for PowerShell, but pin LF for
+# consistency with the rest of the repo.
+*.ps1                 text eol=lf

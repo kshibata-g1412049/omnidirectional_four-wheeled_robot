@@ -7,20 +7,29 @@
 #  - Runs scripts/smoke_test.sh inside the container.
 #
 #  Usage:
-#    bash scripts/docker_build_and_test.sh [image_tag]
+#    bash scripts/docker_build_and_test.sh [image_tag] [ros_distro]
+#
+#  Examples:
+#    bash scripts/docker_build_and_test.sh                       # omni4wd:jazzy, jazzy
+#    bash scripts/docker_build_and_test.sh omni4wd:humble humble
+#    ROS_DISTRO=rolling bash scripts/docker_build_and_test.sh
 #
 #  Honors these environment variables when set:
-#    HTTPS_PROXY / HTTP_PROXY / NO_PROXY   - forwarded as docker build args
+#    ROS_DISTRO                             - ROS 2 distro to build
+#                                              (humble|jazzy|rolling), overridden
+#                                              by the 2nd positional arg if given
+#    HTTPS_PROXY / HTTP_PROXY / NO_PROXY    - forwarded as docker build args
 #    EXTRA_CA_BUNDLE                        - path to a CA cert to trust in build
 # ===========================================================================
 set -euo pipefail
 
-IMAGE="${1:-omni4wd:jazzy}"
+ROS_DISTRO="${2:-${ROS_DISTRO:-jazzy}}"
+IMAGE="${1:-omni4wd:${ROS_DISTRO}}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_DIR"
 
 # --- proxy / CA wiring (optional) ------------------------------------------
-BUILD_ARGS=()
+BUILD_ARGS=(--build-arg "ROS_DISTRO=$ROS_DISTRO")
 NET_ARGS=()
 if [ -n "${HTTPS_PROXY:-${https_proxy:-}}" ]; then
   PROXY="${HTTPS_PROXY:-$https_proxy}"
@@ -42,7 +51,7 @@ cleanup_ca() { [ "$CLEAN_CA" -eq 1 ] && rm -f "$REPO_DIR/ca-bundle.crt" || true;
 trap cleanup_ca EXIT
 
 # --- build -----------------------------------------------------------------
-echo "[build] docker build -t $IMAGE ..."
+echo "[build] docker build -t $IMAGE (ROS_DISTRO=$ROS_DISTRO) ..."
 docker build "${NET_ARGS[@]}" "${BUILD_ARGS[@]}" -t "$IMAGE" "$REPO_DIR"
 
 # --- run smoke test --------------------------------------------------------
@@ -51,8 +60,8 @@ RC=0
 docker run --rm "${NET_ARGS[@]}" "$IMAGE" smoke_test.sh || RC=$?
 
 if [ $RC -eq 0 ]; then
-  echo "[test] RESULT: PASS"
+  echo "[test] RESULT: PASS ($ROS_DISTRO)"
 else
-  echo "[test] RESULT: FAIL (rc=$RC)"
+  echo "[test] RESULT: FAIL ($ROS_DISTRO, rc=$RC)"
 fi
 exit $RC

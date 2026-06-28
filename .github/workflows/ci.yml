@@ -1,7 +1,8 @@
 name: CI
 
 # Builds the Docker image (colcon build inside) and runs the headless
-# functional smoke test (controllers active + /cmd_vel rotates the wheels).
+# functional smoke test (controllers active + /cmd_vel rotates the wheels),
+# across all three supported ROS 2 distros (Humble, Jazzy, Rolling).
 # GitHub-hosted runners have open network access, so the ROS base image and
 # packages.ros.org are reachable here.
 
@@ -11,7 +12,9 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Avoid duplicate runs (push + pull_request) for the same ref.
+# Avoid duplicate runs (push + pull_request) for the same ref. All matrix
+# legs of one workflow run share this group, so a superseding push cancels
+# the entire previous run (all distro legs) together.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -20,9 +23,13 @@ jobs:
   build-and-smoke-test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        ros_distro: [humble, jazzy, rolling]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build image and run headless smoke test
-        run: bash scripts/docker_build_and_test.sh omni4wd:ci
+      - name: Build image and run headless smoke test (${{ matrix.ros_distro }})
+        run: bash scripts/docker_build_and_test.sh "omni4wd:${{ matrix.ros_distro }}" "${{ matrix.ros_distro }}"

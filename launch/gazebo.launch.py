@@ -110,24 +110,29 @@ def generate_launch_description():
         parameters=[{"config_file": bridge_config, "use_sim_time": True}],
     )
 
+    # --param-file is passed explicitly rather than relying on the spawned
+    # controller picking up controller_manager's already-loaded parameters --
+    # on some distros (e.g. Rolling) that implicit propagation doesn't happen
+    # reliably and the controller fails to initialize with "parameter
+    # 'joints' is not initialized".
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster"],
+        arguments=["joint_state_broadcaster", "--param-file", controllers_yaml],
         output="screen",
     )
 
     position_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["position_controller"],
+        arguments=["position_controller", "--param-file", controllers_yaml],
         output="screen",
     )
 
     velocity_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["velocity_controller"],
+        arguments=["velocity_controller", "--param-file", controllers_yaml],
         output="screen",
     )
 

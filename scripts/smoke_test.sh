@@ -14,7 +14,7 @@
 # NOTE: do not use `set -u` here -- the ROS 2 / colcon setup scripts reference
 # unbound variables (e.g. AMENT_TRACE_SETUP_FILES) and would abort sourcing.
 
-source /opt/ros/jazzy/setup.bash
+source "/opt/ros/${ROS_DISTRO:-jazzy}/setup.bash"
 source /ros2_ws/install/setup.bash
 
 LOG=/tmp/launch.log
@@ -39,11 +39,16 @@ trap cleanup EXIT
 # ---------------------------------------------------------------------------
 # 1) wait for all controllers to become active
 # ---------------------------------------------------------------------------
-echo "[smoke] waiting for controllers to become active (timeout 150s)..."
-deadline=$((SECONDS + 150))
+echo "[smoke] waiting for controllers to become active (timeout 120s)..."
+deadline=$((SECONDS + 120))
 active_ok=0
 while [ $SECONDS -lt $deadline ]; do
-  out=$(ros2 control list_controllers 2>/dev/null)
+  # Some ros2_control CLI versions (e.g. on Humble) emit ANSI color codes
+  # even when stdout is piped, so each line can start with an escape
+  # sequence rather than the controller name -- strip them before matching,
+  # otherwise the ^${c} anchor never matches and this loop spins until the
+  # deadline even though the controllers became active almost immediately.
+  out=$(ros2 control list_controllers 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g')
   ok=1
   for c in "${NEED[@]}"; do
     echo "$out" | grep -qE "^${c}[[:space:]].*active" || ok=0
@@ -97,8 +102,22 @@ except Exception as e:
     print("[smoke] ERR reading /joint_states:", e); sys.exit(2)
 
 # `ros2 topic echo` can prepend tab-indented banner lines (e.g.
-# "\ttotal count change:1"); drop those, then find the YAML message doc.
-clean = "\n".join(ln for ln in out.splitlines() if "\t" not in ln)
+# "\ttotal count change:1") and, on some distros, glue the last banner
+# line directly onto the "---" doc separator with no newline in between
+# (e.g. "\ttotal count: 1---"). Drop the banner text but keep any "---"
+# separator that was glued onto it, otherwise two YAML docs get fused
+# into one unparsable blob.
+import re
+lines = []
+for ln in out.splitlines():
+    if "message was lost" in ln.lower():
+        continue
+    if "\t" in ln:
+        if re.search(r"---\s*$", ln):
+            lines.append("---")
+        continue
+    lines.append(ln)
+clean = "\n".join(lines)
 data = None
 for seg in clean.split("---"):
     seg = seg.strip()
