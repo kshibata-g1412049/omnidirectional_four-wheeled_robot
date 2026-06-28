@@ -39,11 +39,16 @@ trap cleanup EXIT
 # ---------------------------------------------------------------------------
 # 1) wait for all controllers to become active
 # ---------------------------------------------------------------------------
-echo "[smoke] waiting for controllers to become active (timeout 600s)..."
-deadline=$((SECONDS + 600))
+echo "[smoke] waiting for controllers to become active (timeout 120s)..."
+deadline=$((SECONDS + 120))
 active_ok=0
 while [ $SECONDS -lt $deadline ]; do
-  out=$(ros2 control list_controllers 2>/dev/null)
+  # Some ros2_control CLI versions (e.g. on Humble) emit ANSI color codes
+  # even when stdout is piped, so each line can start with an escape
+  # sequence rather than the controller name -- strip them before matching,
+  # otherwise the ^${c} anchor never matches and this loop spins until the
+  # deadline even though the controllers became active almost immediately.
+  out=$(ros2 control list_controllers 2>/dev/null | sed -E 's/\x1b\[[0-9;]*m//g')
   ok=1
   for c in "${NEED[@]}"; do
     echo "$out" | grep -qE "^${c}[[:space:]].*active" || ok=0
