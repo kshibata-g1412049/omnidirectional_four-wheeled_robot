@@ -1,12 +1,14 @@
 <?xml version="1.0"?>
 <!-- ===========================================================================  -->
-<!-- |    wheel.urdf.xacro																											| -->
-<!-- |    author: Koji Shibata                               										| -->
-<!-- |    e-mail: kshibata.0519@gmail.com																				| -->
-<!-- |    This is a URDF file that describes an omnidirectional 								| -->
-<!-- |    four-wheeled robot for ROS users.																			| -->
+<!-- |    wheel.urdf.xacro  (ROS 2 / gz port)                                    | -->
+<!-- |    author: Koji Shibata                                                   | -->
+<!-- |    e-mail: kshibata.0519@gmail.com                                        | -->
+<!-- |    This is a URDF file that describes an omnidirectional                   | -->
+<!-- |    four-wheeled robot for ROS 2 users.                                     | -->
 <!-- ===========================================================================  -->
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+	<!-- Kinematic/visual description of one wheel (steering link + drive link). -->
 	<xacro:macro name="wheel_macro" params="suffix parent x_pos y_pos">
 		<link name="${suffix}_link1">
 			<visual>
@@ -58,60 +60,56 @@
 			</inertial>
 		</link>
 
+		<!-- joint1: steering (position controlled) -->
 		<joint name="${suffix}_joint1" type="continuous">
 			<origin xyz="${x_pos} ${y_pos} 0." rpy="0. 0. 0."/>
 			<axis xyz="0. 0. 1."/>
 			<parent link="${parent}"/>
 			<child link="${suffix}_link1"/>
-
-			<calibration rising="0."/>
 			<dynamics damping="1." friction="0."/>
 		</joint>
 
+		<!-- joint2: drive (velocity controlled) -->
 		<joint name="${suffix}_joint2" type="continuous">
 			<origin xyz="0. 0. 0." rpy="0. 0. 0."/>
 			<axis xyz="0. 1. 0."/>
 			<parent link="${suffix}_link1"/>
 			<child link="${suffix}_link2"/>
-
-			<calibration rising="0."/>
 			<dynamics damping="1." friction="0."/>
 		</joint>
 
-		<transmission name="${suffix}_trans1">
-			<type>transmission_interface/SimpleTransmission</type>
-			<joint name="${suffix}_joint1">
-				<hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-			</joint>
-			<actuator name="${suffix}_motor1">
-				<mechanicalReduction>1</mechanicalReduction>
-				<hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
-			</actuator>
-		</transmission>
-
-		<transmission name="${suffix}_trans2">
-			<type>transmission_interface/SimpleTransmission</type>
-			<joint name="${suffix}_joint2">
-				<hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-			</joint>
-			<actuator name="${suffix}_motor2">
-				<mechanicalReduction>1</mechanicalReduction>
-				<hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-			</actuator>
-		</transmission>
-
 		<gazebo reference="${suffix}_link1">
-			<selfCollide>false</selfCollide>
 			<mu1 value="0.05"/>
 			<mu2 value="0.05"/>
 			<material>Gazebo/Black</material>
 		</gazebo>
 
 		<gazebo reference="${suffix}_link2">
-			<selfCollide>false</selfCollide>
 			<mu1 value="0.80"/>
 			<mu2 value="0.80"/>
 			<material>Gazebo/Black</material>
 		</gazebo>
+	</xacro:macro>
+
+	<!-- ros2_control joint entries for one wheel.                                -->
+	<!-- joint1 = steering (position command), joint2 = drive (velocity command). -->
+	<!-- Call this inside a single <ros2_control> block in robot.urdf.xacro.      -->
+	<xacro:macro name="wheel_ros2_control" params="suffix">
+		<joint name="${suffix}_joint1">
+			<command_interface name="position">
+				<param name="min">-${pi}</param>
+				<param name="max">${pi}</param>
+			</command_interface>
+			<state_interface name="position"/>
+			<state_interface name="velocity"/>
+		</joint>
+		<joint name="${suffix}_joint2">
+			<command_interface name="velocity">
+				<param name="min">-${velocity_limit}</param>
+				<param name="max">${velocity_limit}</param>
+			</command_interface>
+			<state_interface name="position"/>
+			<state_interface name="velocity"/>
+		</joint>
 	</xacro:macro>
 </robot>

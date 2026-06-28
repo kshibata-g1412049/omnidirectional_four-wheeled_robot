@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <!-- ===========================================================================  -->
-<!-- |    ommidirecctional_four-wheeled_robot.urdf.xacro												| -->
-<!-- |    author: Koji Shibata                               										| -->
-<!-- |    e-mail: kshibata.0519@gmail.com																				| -->
-<!-- |    This is a URDF file that describes an omnidirectional 								| -->
-<!-- |    four-wheeled robot for ROS users.																			| -->
+<!-- |    robot.urdf.xacro  (ROS 2 / gz port)                                    | -->
+<!-- |    author: Koji Shibata                                                   | -->
+<!-- |    e-mail: kshibata.0519@gmail.com                                        | -->
+<!-- |    This is a URDF file that describes an omnidirectional                   | -->
+<!-- |    four-wheeled robot for ROS 2 users.                                     | -->
 <!-- ===========================================================================  -->
-<robot name="omnidirectional_four-wheeled_robot" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot name="omnidirectional_four_wheeled_robot" xmlns:xacro="http://ros.org/wiki/xacro">
 <xacro:property name="x_size" value="0.75"/>
 <xacro:property name="y_size" value="0.75"/>
 <xacro:property name="z_size" value="0.25"/>
@@ -16,11 +16,14 @@
 <xacro:property name="wheel_mass" value="0.5"/>
 <xacro:property name="effort_limit" value="1."/>
 <xacro:property name="velocity_limit" value="5."/>
-<xacro:property name="control_period" value="0.001"/>
 
-<xacro:include filename="$(find omnidirectional_four-wheeled_robot)/urdf/wheel.urdf.xacro"/>
-<xacro:include filename="$(find omnidirectional_four-wheeled_robot)/urdf/camera.urdf.xacro"/>
-<xacro:include filename="$(find omnidirectional_four-wheeled_robot)/urdf/laser.urdf.xacro"/>
+<!-- Absolute path to the ros2_control controller configuration.                -->
+<!-- Passed in from the launch file (resolved from the package share dir).      -->
+<xacro:arg name="controllers_config" default=""/>
+
+<xacro:include filename="$(find omnidirectional_four_wheeled_robot)/urdf/wheel.urdf.xacro"/>
+<xacro:include filename="$(find omnidirectional_four_wheeled_robot)/urdf/camera.urdf.xacro"/>
+<xacro:include filename="$(find omnidirectional_four_wheeled_robot)/urdf/laser.urdf.xacro"/>
 
 	<link name="base_link"/>
 	<link name="body_link">
@@ -66,8 +69,8 @@
 
 		<inertial>
 			<origin xyz="0. 0. 0."/>
-			<mass value="0."/>
-			<inertia ixx="0." ixy="0." ixz="0." iyy="0." iyz="0." izz="0."/>
+			<mass value="1.e-6"/>
+			<inertia ixx="1.e-6" ixy="0." ixz="0." iyy="1.e-6" iyz="0." izz="1.e-6"/>
 		</inertial>
 	</link>
 
@@ -75,7 +78,6 @@
 		<origin xyz="0. 0. 0.3" rpy="0. 0. 0."/>
 		<parent link="base_link"/>
 		<child link="body_link"/>
-		<calibration rising="0."/>
 		<dynamics damping="0." friction="0."/>
 	</joint>
 
@@ -93,32 +95,53 @@
 	<!-- <xacro:laser_macro prefix="FrontLaser" parent="body_link" xyz="${x_size/4} 0. ${z_size/2 + 1.e-2}" rpy="0. 0. 0."/>
 	<xacro:laser_macro prefix="RearLaser" parent="body_link" xyz="${-x_size/4} 0. ${z_size/2 + 1.e-2}" rpy="0. 0. ${-pi}"/> -->
 
+	<!-- ros2_control: a single system aggregating all 8 wheel joints. -->
+	<ros2_control name="GazeboSimSystem" type="system">
+		<hardware>
+			<plugin>gz_ros2_control/GazeboSimSystem</plugin>
+		</hardware>
+		<xacro:wheel_ros2_control suffix="FRwheel"/>
+		<xacro:wheel_ros2_control suffix="RRwheel"/>
+		<xacro:wheel_ros2_control suffix="FLwheel"/>
+		<xacro:wheel_ros2_control suffix="RLwheel"/>
+	</ros2_control>
+
 	<gazebo reference="base_link">
-		<selfCollide>false</selfCollide>
 		<mu1 value="0.05"/>
 		<mu2 value="0.05"/>
 	</gazebo>
 
 	<gazebo reference="frontPoint_link">
-		<selfCollide>false</selfCollide>
 		<material>Gazebo/Red</material>
 	</gazebo>
 
+	<!-- IMU sensor (handled by gz-sim-imu-system, bridged to ROS). -->
+	<gazebo reference="body_link">
+		<sensor name="imu_sensor" type="imu">
+			<always_on>1</always_on>
+			<update_rate>50</update_rate>
+			<topic>imu</topic>
+			<gz_frame_id>body_link</gz_frame_id>
+			<imu>
+				<angular_velocity>
+					<x><noise type="gaussian"><mean>0.</mean><stddev>1.e-3</stddev></noise></x>
+					<y><noise type="gaussian"><mean>0.</mean><stddev>1.e-3</stddev></noise></y>
+					<z><noise type="gaussian"><mean>0.</mean><stddev>1.e-3</stddev></noise></z>
+				</angular_velocity>
+				<linear_acceleration>
+					<x><noise type="gaussian"><mean>0.</mean><stddev>1.e-3</stddev></noise></x>
+					<y><noise type="gaussian"><mean>0.</mean><stddev>1.e-3</stddev></noise></y>
+					<z><noise type="gaussian"><mean>0.</mean><stddev>1.e-3</stddev></noise></z>
+				</linear_acceleration>
+			</imu>
+		</sensor>
+	</gazebo>
+
+	<!-- gz_ros2_control system plugin: loads the controller_manager inside gz. -->
 	<gazebo>
-		<plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-			<controlPeriod>${control_period}</controlPeriod>
-			<legacyModeNS>true</legacyModeNS>
-			<robotParam>/robot_description</robotParam>
-			<robotNamespace>/omnidirectional_four_wheeled_robot</robotNamespace>
-			<robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
-		</plugin>
-		<plugin name="imu_plugin" filename="libgazebo_ros_imu.so">
-			<alwaysOn>true</alwaysOn>
-			<bodyName>body_link</bodyName>
-			<topicName>/omnidirectional_four_wheeled_robot/imu</topicName>
-			<serviceName>imu_service</serviceName>
-			<gaussianNoise>1.e-3</gaussianNoise>
-			<updateRate>50.</updateRate>
+		<plugin filename="gz_ros2_control-system"
+				name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+			<parameters>$(arg controllers_config)</parameters>
 		</plugin>
 	</gazebo>
 </robot>

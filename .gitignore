@@ -1,6 +1,13 @@
+# colcon (ROS 2)
+build/
+install/
+log/
+
+# staged CA bundle for docker builds (never commit)
+ca-bundle.crt
+
 devel/
 logs/
-build/
 bin/
 lib/
 msg_gen/

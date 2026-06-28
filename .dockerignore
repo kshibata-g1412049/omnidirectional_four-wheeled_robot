@@ -1,0 +1,13 @@
+# colcon / build artifacts
+build/
+install/
+log/
+# git
+.git/
+.gitignore
+# python caches
+**/__pycache__/
+*.pyc
+# editor
+*~
+.#*

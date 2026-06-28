@@ -1,25 +1,30 @@
 <?xml version="1.0"?>
 <!-- ===========================================================================  -->
-<!-- |    laser.urdf.xacro																											| -->
-<!-- |    author: Koji Shibata                               										| -->
-<!-- |    e-mail: kshibata.0519@gmail.com																				| -->
-<!-- |    This is a URDF file that describes an omnidirectional 								| -->
-<!-- |    four-wheeled robot for ROS users.																			| -->
+<!-- |    laser.urdf.xacro  (ROS 2 / gz port)                                    | -->
+<!-- |    author: Koji Shibata                                                   | -->
+<!-- |    e-mail: kshibata.0519@gmail.com                                        | -->
+<!-- |    This is a URDF file that describes an omnidirectional                   | -->
+<!-- |    four-wheeled robot for ROS 2 users.                                     | -->
 <!-- ===========================================================================  -->
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 	<xacro:macro name="laser_macro" params="parent prefix xyz rpy">
 		<link name="${prefix}_link">
+			<!-- The original Hokuyo .dae mesh is not shipped with gz, so a small  -->
+			<!-- box placeholder is used for visual/collision.                     -->
 			<collision>
 				<origin xyz="0. 0. 0." rpy="0. 0. 0."/>
 				<geometry>
-					<mesh filename="package://gazebo_plugins/test/multi_robot_scenario/meshes/laser/hokuyo.dae"/>
+					<box size="0.05 0.05 0.07"/>
 				</geometry>
 			</collision>
 			<visual>
 				<origin xyz="0. 0. 0." rpy="0. 0. 0."/>
 				<geometry>
-					<mesh filename="package://gazebo_plugins/test/multi_robot_scenario/meshes/laser/hokuyo.dae"/>
+					<box size="0.05 0.05 0.07"/>
 				</geometry>
+				<material name="Gray">
+					<color rgba="0.5 0.5 0.5 1."/>
+				</material>
 			</visual>
 			<inertial>
 				<mass value="1.e-6"/>
@@ -34,17 +39,21 @@
 			<child link="${prefix}_link"/>
 		</joint>
 
-		<!-- Hokuyo sensor for simulation -->
+		<!-- gz GPU lidar. Handled by gz-sim-sensors-system and bridged to ROS    -->
+		<!-- (sensor_msgs/LaserScan) via ros_gz_bridge.                           -->
 		<gazebo reference="${prefix}_link">
-			<sensor type="ray" name="${prefix}_sensor">
+			<sensor type="gpu_lidar" name="${prefix}_sensor">
 				<pose>0. 0. 0. 0. 0. 0.</pose>
+				<always_on>1</always_on>
 				<visualize>true</visualize>
-				<update_rate>40.</update_rate>
-				<ray>
+				<update_rate>40</update_rate>
+				<topic>${prefix}/scan</topic>
+				<gz_frame_id>${prefix}_link</gz_frame_id>
+				<lidar>
 					<scan>
 						<horizontal>
 							<samples>1080</samples>
-							<resolution>0.25</resolution>
+							<resolution>1</resolution>
 							<min_angle>${-3*pi/4}</min_angle>
 							<max_angle>${3*pi/4}</max_angle>
 						</horizontal>
@@ -52,22 +61,14 @@
 					<range>
 						<min>0.1</min>
 						<max>30.</max>
-						<resolution>1.e-3</resolution>
+						<resolution>0.01</resolution>
 					</range>
 					<noise>
-						<!-- Noise parameters based on published spec for Hokuyo laser 			-->
-						<!-- achieving "+-30mm" accuracy at range < 10m.  A mean of 0.0m and 		-->
-						<!-- stddev of 0.01m will put 99.7% of samples within 0.03m of the true 	-->
-						<!-- reading. 																	-->
 						<type>gaussian</type>
 						<mean>0.</mean>
 						<stddev>1.e-3</stddev>
 					</noise>
-				</ray>
-				<plugin name="gazebo_ros_head_hokuyo_controller" filename="libgazebo_ros_laser.so">
-					<topicName>/omnidirectional_four_wheeled_robot/${prefix}_scan</topicName>
-					<frameName>${prefix}_link</frameName>
-				</plugin>
+				</lidar>
 			</sensor>
 		</gazebo>
 	</xacro:macro>

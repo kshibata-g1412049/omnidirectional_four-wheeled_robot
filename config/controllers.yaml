@@ -1,0 +1,37 @@
+# ros2_control configuration for the omnidirectional four-wheeled robot.
+#
+#  - joint_state_broadcaster : publishes /joint_states
+#  - position_controller     : steering angle (delta) of the 4 wheels (joint1)
+#  - velocity_controller     : rotation speed  (omega) of the 4 wheels (joint2)
+#
+# The joint order in each controller MUST match the command-array order produced
+# by the controller_kinematics node:  [FR, RR, FL, RL].
+
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # [Hz]
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    position_controller:
+      type: position_controllers/JointGroupPositionController
+
+    velocity_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+position_controller:
+  ros__parameters:
+    joints:
+      - FRwheel_joint1
+      - RRwheel_joint1
+      - FLwheel_joint1
+      - RLwheel_joint1
+
+velocity_controller:
+  ros__parameters:
+    joints:
+      - FRwheel_joint2
+      - RRwheel_joint2
+      - FLwheel_joint2
+      - RLwheel_joint2

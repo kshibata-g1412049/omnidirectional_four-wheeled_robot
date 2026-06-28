@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <!-- ===========================================================================  -->
-<!-- |    camera.urdf.xacro																											| -->
-<!-- |    author: Koji Shibata                               										| -->
-<!-- |    e-mail: kshibata.0519@gmail.com																				| -->
-<!-- |    This is a URDF file that describes an omnidirectional 								| -->
-<!-- |    four-wheeled robot for ROS users.																			| -->
+<!-- |    camera.urdf.xacro  (ROS 2 / gz port)                                   | -->
+<!-- |    author: Koji Shibata                                                   | -->
+<!-- |    e-mail: kshibata.0519@gmail.com                                        | -->
+<!-- |    This is a URDF file that describes an omnidirectional                   | -->
+<!-- |    four-wheeled robot for ROS 2 users.                                     | -->
 <!-- ===========================================================================  -->
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
   <xacro:macro name="camera_macro" params="parent prefix xyz">
@@ -16,11 +16,16 @@
 	  <origin xyz="${xyz}" rpy="${-pi/2} 0. ${-pi/2}"/>
 	</joint>
 
+	<!-- gz camera sensor. Handled by gz-sim-sensors-system (loaded in the    -->
+	<!-- world) and bridged to ROS via ros_gz_bridge (see config/gz_bridge.yaml). -->
 	<gazebo reference="${prefix}_link">
 	  <sensor type="camera" name="${prefix}">
-		<update_rate>30.</update_rate>
+		<always_on>1</always_on>
+		<update_rate>30</update_rate>
+		<visualize>true</visualize>
+		<topic>${prefix}/image</topic>
+		<gz_frame_id>${prefix}_link</gz_frame_id>
 		<camera name="${prefix}">
-		  <pose>0. 0. 0. 0. ${-pi/2} ${pi/2}</pose>
 		  <horizontal_fov>1.3962634</horizontal_fov>
 		  <image>
 			<width>800</width>
@@ -37,23 +42,6 @@
 			<stddev>0.007</stddev>
 		  </noise>
 		</camera>
-
-		<plugin name="camera_controller" filename="libgazebo_ros_camera.so">
-		  <alwaysOn>true</alwaysOn>
-		  <updateRate>0.</updateRate>
-		  <cameraName>/omnidirectional_four_wheeled_robot</cameraName>
-		  <cameraName>${prefix}</cameraName>
-		  <imageTopicName>image_raw</imageTopicName>
-		  <cameraInfoTopicName>camera_info</cameraInfoTopicName>
-		  <frameName>${prefix}_link</frameName>
-		  <hackBaseline>0.</hackBaseline>
-		  <distortionK1>0.</distortionK1>
-		  <distortionK2>0.</distortionK2>
-		  <distortionK3>0.</distortionK3>
-		  <distortionT1>0.</distortionT1>
-		  <distortionT2>0.</distortionT2>
-		</plugin>
-
 	  </sensor>
 	</gazebo>
   </xacro:macro>

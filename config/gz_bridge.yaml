@@ -1,0 +1,36 @@
+# ros_gz_bridge topic mapping for the omnidirectional four-wheeled robot.
+# Used by: ros_gz_bridge parameter_bridge --ros-args -p config_file:=<this>
+
+# Simulation clock (drives use_sim_time on the ROS side).
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS
+
+# IMU mounted on body_link (gz <topic>imu</topic>).
+- ros_topic_name: "/imu"
+  gz_topic_name: "/imu"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
+  direction: GZ_TO_ROS
+
+# Camera image + camera info (gz <topic>camera/image</topic>).
+- ros_topic_name: "/camera/image"
+  gz_topic_name: "/camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/camera/camera_info"
+  gz_topic_name: "/camera/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+
+# Lidar scan (enable when the laser macro is uncommented in robot.urdf.xacro).
+# - ros_topic_name: "/FrontLaser/scan"
+#   gz_topic_name: "/FrontLaser/scan"
+#   ros_type_name: "sensor_msgs/msg/LaserScan"
+#   gz_type_name: "gz.msgs.LaserScan"
+#   direction: GZ_TO_ROS
