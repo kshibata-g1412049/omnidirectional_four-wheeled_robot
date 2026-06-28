@@ -1,18 +1,33 @@
 # ===========================================================================
-#  Dockerfile - omnidirectional_four_wheeled_robot (ROS 2 Jazzy + gz Harmonic)
+#  Dockerfile - omnidirectional_four_wheeled_robot
+#  (ROS 2 Humble / Jazzy / Rolling + Gazebo "gz")
 #
 #  Builds a colcon workspace containing this package and all runtime
 #  dependencies (ros2_control, gz_ros2_control, ros_gz). Suitable for the
 #  headless smoke test in scripts/smoke_test.sh as well as interactive use.
 #
-#  Build (normal):
+#  The ROS 2 distro is selected via the ROS_DISTRO build arg (default jazzy)
+#  and baked into the image's ENV ROS_DISTRO, which docker-entrypoint.sh and
+#  smoke_test.sh read at runtime -- a single Dockerfile/script set serves
+#  every supported distro, no per-distro file forks.
+#
+#  Build (defaults to jazzy):
 #    docker build -t omni4wd:jazzy .
+#  Build for a specific distro:
+#    docker build --build-arg ROS_DISTRO=humble -t omni4wd:humble .
 #  Run the smoke test:
 #    docker run --rm omni4wd:jazzy smoke_test.sh
 #  Interactive shell:
 #    docker run --rm -it omni4wd:jazzy bash
 # ===========================================================================
-FROM ros:jazzy-ros-base
+ARG ROS_DISTRO=jazzy
+FROM ros:${ROS_DISTRO}-ros-base
+
+# Build args are reset across the FROM boundary, so re-declare here and bake
+# the value into ENV ROS_DISTRO for use by RUN steps below and at container
+# runtime (docker-entrypoint.sh / smoke_test.sh).
+ARG ROS_DISTRO=jazzy
+ENV ROS_DISTRO=${ROS_DISTRO}
 
 # Optional HTTP(S) proxy support for restricted build networks.
 ARG http_proxy=""
@@ -36,18 +51,20 @@ RUN if [ -s /usr/local/share/ca-certificates/extra-ca.crt ]; then \
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Runtime / simulation dependencies. ros-gz-sim pulls in gz (Harmonic).
+# Runtime / simulation dependencies. ros-<distro>-ros-gz-sim pulls in gz
+# (Fortress on Humble, Harmonic on Jazzy, latest on Rolling). Package names
+# are identical across Humble/Jazzy/Rolling, only the distro prefix differs.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ros-jazzy-ros-gz-sim \
-        ros-jazzy-ros-gz-bridge \
-        ros-jazzy-ros-gz-interfaces \
-        ros-jazzy-gz-ros2-control \
-        ros-jazzy-ros2-control \
-        ros-jazzy-ros2-controllers \
-        ros-jazzy-xacro \
-        ros-jazzy-robot-state-publisher \
-        ros-jazzy-joint-state-publisher-gui \
-        ros-jazzy-rviz2 \
+        ros-${ROS_DISTRO}-ros-gz-sim \
+        ros-${ROS_DISTRO}-ros-gz-bridge \
+        ros-${ROS_DISTRO}-ros-gz-interfaces \
+        ros-${ROS_DISTRO}-gz-ros2-control \
+        ros-${ROS_DISTRO}-ros2-control \
+        ros-${ROS_DISTRO}-ros2-controllers \
+        ros-${ROS_DISTRO}-xacro \
+        ros-${ROS_DISTRO}-robot-state-publisher \
+        ros-${ROS_DISTRO}-joint-state-publisher-gui \
+        ros-${ROS_DISTRO}-rviz2 \
         libgl1-mesa-dri \
         libegl1 \
         python3-yaml \
@@ -56,14 +73,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Build the workspace.
 WORKDIR /ros2_ws
 COPY . /ros2_ws/src/omnidirectional_four_wheeled_robot
-RUN . /opt/ros/jazzy/setup.sh \
+RUN . /opt/ros/${ROS_DISTRO}/setup.sh \
     && colcon build \
     && rm -rf build log
 
 # Make the smoke test directly invocable and source the overlay on each shell.
 RUN cp /ros2_ws/src/omnidirectional_four_wheeled_robot/scripts/smoke_test.sh /usr/local/bin/smoke_test.sh \
     && chmod +x /usr/local/bin/smoke_test.sh \
-    && echo 'source /opt/ros/jazzy/setup.bash' >> /root/.bashrc \
+    && echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /root/.bashrc \
     && echo 'source /ros2_ws/install/setup.bash' >> /root/.bashrc
 
 # Headless / offscreen defaults.

@@ -1,6 +1,7 @@
 # omnidirectional_four_wheeled_robot (ROS 2)
 
-ROS 2 (**Jazzy**) + **Gazebo (gz / Harmonic)** package for an omnidirectional
+ROS 2 (**Humble**, **Jazzy**, or **Rolling** -- auto-detected via `$ROS_DISTRO`,
+no per-distro file forks) + **Gazebo (gz)** package for an omnidirectional
 four-wheeled (swerve-drive) robot. Each wheel has an independent steering joint
 (`*_joint1`, position controlled) and a drive joint (`*_joint2`, velocity
 controlled). The `controller_kinematics` node converts a body twist on
@@ -34,6 +35,34 @@ This builds the image (`omni4wd:jazzy`) and runs `scripts/smoke_test.sh` inside
 the container, which verifies that the three controllers reach `active` and that
 publishing `/cmd_vel` makes the wheel drive joints rotate in gz.
 
+### Choosing a ROS 2 distro
+
+Humble, Jazzy, and Rolling are all supported; the distro is detected
+automatically at build time from `$ROS_DISTRO` inside the container (set by
+the official `ros:<distro>-ros-base` base image) -- the Dockerfile and scripts
+are shared across all three, no per-distro file forks.
+
+```bash
+# Jazzy (default)
+bash scripts/docker_build_and_test.sh
+
+# Humble
+bash scripts/docker_build_and_test.sh omni4wd:humble humble
+
+# Rolling
+bash scripts/docker_build_and_test.sh omni4wd:rolling rolling
+```
+
+### Windows host
+
+No WSL or Git Bash required -- use the PowerShell equivalent from a regular
+PowerShell prompt (with Docker Desktop running):
+
+```powershell
+.\scripts\docker_build_and_test.ps1
+.\scripts\docker_build_and_test.ps1 -ImageTag omni4wd:humble -RosDistro humble
+```
+
 Interactive use of the image:
 
 ```bash
@@ -42,14 +71,15 @@ docker run --rm -it omni4wd:jazzy bash
 ros2 launch omnidirectional_four_wheeled_robot gazebo.launch.py gui:=false
 ```
 
-## Native build (ROS 2 Jazzy installed)
+## Native build (ROS 2 Humble, Jazzy, or Rolling installed)
 
 ```bash
+# Replace <distro> with humble, jazzy, or rolling to match your installed ROS 2.
 sudo apt install \
-  ros-jazzy-ros2-control ros-jazzy-ros2-controllers ros-jazzy-gz-ros2-control \
-  ros-jazzy-ros-gz-sim ros-jazzy-ros-gz-bridge ros-jazzy-ros-gz-interfaces \
-  ros-jazzy-robot-state-publisher ros-jazzy-joint-state-publisher-gui \
-  ros-jazzy-xacro ros-jazzy-rviz2
+  ros-<distro>-ros2-control ros-<distro>-ros2-controllers ros-<distro>-gz-ros2-control \
+  ros-<distro>-ros-gz-sim ros-<distro>-ros-gz-bridge ros-<distro>-ros-gz-interfaces \
+  ros-<distro>-robot-state-publisher ros-<distro>-joint-state-publisher-gui \
+  ros-<distro>-xacro ros-<distro>-rviz2
 
 mkdir -p ~/ros2_ws/src
 ln -s <this-repo> ~/ros2_ws/src/omnidirectional_four_wheeled_robot

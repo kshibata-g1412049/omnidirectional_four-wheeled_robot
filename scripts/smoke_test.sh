@@ -14,7 +14,7 @@
 # NOTE: do not use `set -u` here -- the ROS 2 / colcon setup scripts reference
 # unbound variables (e.g. AMENT_TRACE_SETUP_FILES) and would abort sourcing.
 
-source /opt/ros/jazzy/setup.bash
+source "/opt/ros/${ROS_DISTRO:-jazzy}/setup.bash"
 source /ros2_ws/install/setup.bash
 
 LOG=/tmp/launch.log
