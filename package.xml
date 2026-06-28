@@ -10,7 +10,7 @@
   </description>
 
   <maintainer email="kshibata.0519@gmail.com">Koji Shibata</maintainer>
-  <license>TODO</license>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

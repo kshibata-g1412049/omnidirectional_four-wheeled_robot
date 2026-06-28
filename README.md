@@ -129,3 +129,7 @@ Controllers (`config/controllers.yaml`): `joint_state_broadcaster`,
 ```bash
 ros2 control list_controllers   # all three should be "active"
 ```
+
+## License
+
+MIT -- see [LICENSE](LICENSE).
